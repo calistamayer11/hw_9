@@ -67,29 +67,21 @@ class BETNode:
         else:
             return self.CARD_VAL_DICT[self.value]
 
-        # if self.value == "=":
-        #     return self.left.evaluate(postfix) == self.right.evaluate(postfix)
-
-        # for item in postfix:
-        #     if isinstance(self.CARD_VAL_DICT[item], int):
-        #         pass
-        #     if self.CARD_VAL_DICT[item] == "=":
-        #         pass
-        #     if self.CARD_VAL_DICT[item] == "+":
-        #         pass
-        #     if self.CARD_VAL_DICT[item] == "-":
-        #         pass
-        #     if self.CARD_VAL_DICT[item] == "*":
-        #         pass
-        #     if self.CARD_VAL_DICT[item] == "/":
-        #         pass
-
-    def postfix_to_infix(self, postfix):
+    def postfix_to_infix(self, expression):
         """Convert a postfix expression to an infix expression"""
         stack = []
-        for item in postfix:
-            # if integer, keep going, once operator: take previous two items and pop them out
-            pass
+        operators = set(["+", "-", "*", "/"])
+        # if integer, keep going, once operator: take previous two items and pop them out
+        for char in expression.split(","):
+            if char.strip() not in operators:
+                stack.append(char.strip())
+            else:
+                operand_2 = stack.pop()
+                operand_1 = stack.pop()
+                # Add parentheses around the operands if they contain operators with lower precedence
+                stack.append("({}{}{})".format(operand_1, char.strip(), operand_2))
+                # stack.append(f"{operand_1}{char}{operand_2}")
+        return stack.pop()
 
     def __repr__(self):
         return f"{self.value} {self.left} {self.right}"
@@ -101,3 +93,11 @@ def create_trees():
 
 def find_solutions():
     pass
+
+
+node = BETNode(3)
+
+# Call the postfix_to_infix() method with an expression argument
+expression = "1, 2, 3, 4, -, +, *"
+infix_expression = node.postfix_to_infix(expression)
+print(infix_expression)
