@@ -49,144 +49,106 @@ class BETNode:
 
     # START HERE
     def add_left(self, left):
+        """Add a left child to this node"""
         self.left = left
 
     def add_right(self, right):
+        """Add a right child to this node"""
         self.right = right
 
     def evaluate(self):
-        """Evaluate the node and return the result"""
+        """Evaluates this node"""
         if self.value not in BETNode.OPERATORS:
             return BETNode.CARD_VAL_DICT.get(self.value)
-        if self.value == "+":
-            return self.left.evaluate() + self.right.evaluate()
-        if self.value == "-":
-            return self.left.evaluate() - self.right.evaluate()
-        if self.value == "*":
-            return self.left.evaluate() * self.right.evaluate()
-        if self.value == "/":
-            if self.right.evaluate() == 0:
-                return 1000000000
-            return self.left.evaluate() / self.right.evaluate()
 
-        else:
-            return self.CARD_VAL_DICT[self.value]
-
-    # def postfix_to_infix(self, expression):
-    #     """Convert a postfix expression to an infix expression"""
-    #     stack = []
-    #     operators = set(["+", "-", "*", "/"])
-    #     # if integer, keep going, once operator: take previous two items and pop them out
-    #     for char in expression.split(","):
-    #         if char.strip() not in operators:
-    #             stack.append(char.strip())
-    #         else:
-    #             operand_2 = stack.pop()
-    #             operand_1 = stack.pop()
-    #             # Add parentheses around the operands if they contain operators with lower precedence
-    #             stack.append("({}{}{})".format(operand_1, char.strip(), operand_2))
-    #             # stack.append(f"{operand_1}{char}{operand_2}")
-    #     return stack.pop()
+        # if statement needed to run in VS-Code
+        if self.left is not None and self.right is not None:
+            right_value = self.right.evaluate()
+            left_value = self.left.evaluate()
+            operator = self.value
+            if operator == "/" and right_value == 0:
+                return -1
+            return eval(f"{left_value} {operator} {right_value}")
 
     def __repr__(self):
-
+        """Returns a string representation of this node"""
         if self.value not in BETNode.OPERATORS:
             return self.value
         return f"({repr(self.left)}{self.value}{repr(self.right)})"
 
 
 def create_trees(cards):
+    """Creates a binary expression tree from a list of cards"""
     possible_tree_structures = {"CCXCCXX", "CCXCXCX", "CCCXXCX", "CCCXCXX", "CCCCXXX"}
     operators = {"+", "-", "*", "/"}
     operator_combinations = list(itertools.product(operators, repeat=3))
     card_combinations = list(itertools.permutations(cards))
     total_tree_combinations = set()
     for combo_cards in card_combinations:
-        for combo_operators in operator_combinations:
-            for possible_tree in possible_tree_structures:
-                tree = ""
-                cards_used = 0
-                operators_used = 0
-                for i in range(len(possible_tree)):
-                    if possible_tree[i] == "C":
-                        tree += combo_cards[cards_used] + ","
-                        cards_used += 1
-                    else:
-                        tree += combo_operators[operators_used] + ","
-                        operators_used += 1
+        for combo_operator in operator_combinations:
+            for pos_tree in possible_tree_structures:
+                tree = BETNode(combo_operator[0])
+                if pos_tree == "CCCCXXX":
+                    tree.add_right(BETNode(combo_operator[1]))
+                    tree.add_left(BETNode(combo_cards[0]))
+                    if tree.right is not None:
+                        tree.right.add_right(BETNode(combo_operator[2]))
+                        tree.right.right.add_right(BETNode(combo_cards[0]))
+                        tree.right.right.add_left(BETNode(combo_cards[1]))
+                        tree.right.add_left(BETNode(combo_cards[2]))
+                        tree.add_left(BETNode(combo_cards[3]))
+
+                elif pos_tree == "CCXCCXX":
+                    tree.add_right(BETNode(combo_operator[1]))
+                    tree.add_left(BETNode(combo_operator[2]))
+                    if tree.right is not None and tree.left is not None:
+                        tree.right.add_right(BETNode(combo_cards[0]))
+                        tree.right.add_left(BETNode(combo_cards[1]))
+                        tree.left.add_right(BETNode(combo_cards[2]))
+                        tree.left.add_left(BETNode(combo_cards[3]))
+
+                elif pos_tree == "CCXCXCX":
+                    tree.add_right(BETNode(combo_cards[0]))
+                    tree.add_left(BETNode(combo_operator[1]))
+                    if tree.left is not None:
+                        tree.left.add_right(BETNode(combo_cards[1]))
+                        tree.left.add_left(BETNode(combo_operator[2]))
+                        tree.left.left.add_right(BETNode(combo_cards[2]))
+                        tree.left.left.add_left(BETNode(combo_cards[3]))
+
+                elif pos_tree == "CCCXXCX":
+                    tree.add_right(BETNode(combo_cards[0]))
+                    tree.add_left(BETNode(combo_operator[1]))
+                    if tree.left is not None:
+                        tree.left.add_right(BETNode(combo_operator[2]))
+                        tree.left.add_left(BETNode(combo_cards[1]))
+                        tree.left.right.add_right(BETNode(combo_cards[2]))
+                        tree.left.right.add_left(BETNode(combo_cards[3]))
+
+                elif pos_tree == "CCCXCXX":
+                    tree.add_right(BETNode(combo_operator[1]))
+                    tree.add_left(BETNode(combo_cards[0]))
+                    if tree.right is not None:
+                        tree.right.add_right(BETNode(combo_cards[1]))
+                        tree.right.add_left(BETNode(combo_operator[2]))
+                        tree.right.left.add_right(BETNode(combo_cards[2]))
+                        tree.right.left.add_left(BETNode(combo_cards[3]))
+
                 total_tree_combinations.add(tree)
-    # print(total_tree_combinations)
     return total_tree_combinations
-    # print(len(total_tree_combinations))
 
 
 def find_solutions(cards):
+    """Finds all solutions to a given set of cards"""
     possible_trees = create_trees(cards)
-    operators = ["+", "-", "*", "/"]
     result = set()
-    # Create all trees
-    count = 0
     for tree in possible_trees:
-        # To handle card '10'
-        tree_list = tree.split(",")
-        root = BETNode(tree_list[6])
-        root.add_right(BETNode(tree_list[5]))
-        # Perfect Tree
-        if tree[5] in operators and tree[2] in operators:
-            root.add_left(BETNode(tree_list[2]))
-            root.right.add_right(BETNode(tree_list[4]))
-            root.right.add_left(BETNode(tree_list[3]))
-            root.left.add_right(BETNode(tree_list[1]))
-            root.left.add_left(BETNode(tree_list[0]))
-        # Right weighted tree
-        elif tree_list[5] in operators:
-            root.right.add_right(BETNode(tree_list[4]))
-            if tree_list[4] in operators:
-                root.right.right.add_right(BETNode(tree_list[3]))
-                root.right.right.add_left(BETNode(tree_list[2]))
-                root.right.add_left(BETNode(tree_list[1]))
-                root.add_left(BETNode(tree_list[0]))
-            else:
-                root.right.add_left(BETNode(tree_list[3]))
-                root.right.left.add_right(BETNode(tree_list[2]))
-                root.right.left.add_left(BETNode(tree_list[1]))
-                root.add_left(BETNode(tree_list[0]))
-        # Left weighted tree
-        elif tree_list[5] not in operators:
-            root.add_left(BETNode(tree_list[4]))
-            root.left.add_right(BETNode(tree_list[3]))
-            if tree_list[3] in operators:
-                root.left.right.add_right(BETNode(tree_list[2]))
-                root.left.right.add_left(BETNode(tree_list[1]))
-                root.left.add_left(BETNode(tree_list[0]))
-            else:
-                root.left.add_left(BETNode(tree_list[2]))
-                root.left.left.add_right(BETNode(tree_list[1]))
-                root.left.left.add_left(BETNode(tree_list[0]))
-        if root.evaluate() == 24:
-            result.add(repr(root))
-            if len(repr(root)) == len("(Q*(2*A))"):
-                count += 1
-                print(
-                    tree_list[0],
-                    tree_list[1],
-                    tree_list[2],
-                    tree_list[3],
-                    tree_list[4],
-                    tree_list[5],
-                    tree_list[6],
-                )
-    print(count)
-    print(len(result))
+        if tree.evaluate() == 24:
+            result.add(repr(tree))
+    return result
 
 
 if __name__ == "__main__":
     cards = ["A", "2", "3", "Q"]
+    create_trees(cards)
     find_solutions(cards)
-
-# node = BETNode(3)
-
-# # Call the postfix_to_infix() method with an expression argument
-# expression = "1, 2, 3, 4, -, +, *"
-# infix_expression = node.postfix_to_infix(expression)
-# print(infix_expression)
